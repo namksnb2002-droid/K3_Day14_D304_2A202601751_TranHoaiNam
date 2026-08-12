@@ -194,7 +194,11 @@ def _format_optional_score(value: float | None) -> str:
     return "n/a" if value is None else f"{value:.3f}"
 
 
-def print_exercise_3_2(results: list[EvalResult], summary: dict[str, Any]) -> None:
+def print_exercise_3_2(
+    results: list[EvalResult],
+    summary: dict[str, Any],
+    answers_by_question: dict[str, str] | None = None,
+) -> None:
     """Print the table and summary requested by Exercise 3.2."""
 
     print(
@@ -243,6 +247,28 @@ def print_exercise_3_2(results: list[EvalResult], summary: dict[str, Any]) -> No
             f"Score: {result.overall_score():.3f} | "
             f"Failure type: {result.failure_type or '-'}"
         )
+
+    print("\n" + "="*80)
+    print("[KIEM TRA NGUON TRUY XUAT (CONTEXT PROVENANCE & RETRIEVAL TRACE INSPECTION)]")
+    print("="*80)
+    for result in worst:
+        pair = result.qa_pair
+        qid = pair.metadata.get("id", "")
+        actual_ans = answers_by_question.get(pair.question, "") if answers_by_question else ""
+        print(f"\n- [Ma cau: {qid}] - Overall Score: {result.overall_score():.3f} | Failure: {result.failure_type}")
+        print(f"  Question: {pair.question}")
+        print(f"  Expected Answer: {pair.expected_answer}")
+        if actual_ans:
+            print(f"  Actual Answer: {actual_ans}")
+        print(f"  Gold Evidence (Nguon chuan): {pair.context[:140]}...")
+        if pair.retrieved_contexts:
+            print("  Retrieved Chunks (Nguon AI lay ve):")
+            for i, chunk in enumerate(pair.retrieved_contexts[:2], 1):
+                print(f"    [{i}] {chunk[:110]}...")
+        print("-" * 60)
+
+
+
 
 
 def parse_args() -> argparse.Namespace:
@@ -305,7 +331,7 @@ def main() -> int:
         print(f"ERROR: {exc}")
         return 2
 
-    print_exercise_3_2(results, summary)
+    print_exercise_3_2(results, summary, answers_by_question)
     print(f"\nSaved benchmark results: {output}")
     return 0
 
